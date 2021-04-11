@@ -37,7 +37,7 @@ import android.app.AlertDialog;
 
 import fine.koacaiia.recyclerviewandcameraviewexercise.R;
 
-public class MainActivity extends AppCompatActivity implements SurfaceHolder.Callback {
+public class MainActivity extends AppCompatActivity implements SurfaceHolder.Callback,MnfCargoListAdapter.AdapterOnClick {
     RecyclerView recyclerview;
     ArrayList<MnfCargoList> list;
     MnfCargoListAdapter adapter;
@@ -61,7 +61,7 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
         recyclerview.setLayoutManager(manager);
         database=FirebaseDatabase.getInstance();
         getData();
-        adapter=new MnfCargoListAdapter(list);
+        adapter=new MnfCargoListAdapter(list,this);
         recyclerview.setAdapter(adapter);
         adapter.notifyDataSetChanged();
 
@@ -254,5 +254,10 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
         AlertDialog.Builder builder=new AlertDialog.Builder(this);
         builder.setView(view)
                 .show();
+    }
+
+    @Override
+    public void onClick(MnfCargoListAdapter.ListViewHolder listViewHolder, View v, int pos) {
+        Toast.makeText(this,list.get(pos).getDate(),Toast.LENGTH_SHORT).show();
     }
 }
