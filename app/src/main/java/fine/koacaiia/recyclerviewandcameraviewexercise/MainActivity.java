@@ -9,15 +9,19 @@ import android.content.DialogInterface;
 import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.graphics.Matrix;
 import android.hardware.Camera;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Environment;
 import android.provider.MediaStore;
 import android.util.Log;
+import android.view.Display;
+import android.view.Surface;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
 import android.view.View;
+import android.view.WindowManager;
 import android.widget.Button;
 import android.widget.DatePicker;
 import android.widget.TextView;
@@ -143,6 +147,7 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
             public void onPictureTaken(byte[] data, Camera camera) {
                 OutputStream fos=null;
                 Bitmap bitmap= BitmapFactory.decodeByteArray(data,0,data.length);
+                bitmap=rotate(bitmap,getDegree());
                 ContentValues contentValues=new ContentValues();
                 ContentResolver contentResolver=getContentResolver();
                 contentValues.put(MediaStore.Images.Media.DISPLAY_NAME,System.currentTimeMillis()+".jpg");
@@ -165,6 +170,12 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
             }
         };
         camera.takePicture(null,null,callback);
+    }
+
+    private Bitmap rotate(Bitmap bitmap, int degree) {
+        Matrix matrix=new Matrix();
+        matrix.postRotate(degree);
+        return bitmap.createBitmap(bitmap,0,0,bitmap.getWidth(),bitmap.getHeight(),matrix,true);
     }
 
     private void putData() {
@@ -208,7 +219,7 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
 
     private void preViewProgress() {
         camera=Camera.open();
-        camera.setDisplayOrientation(90);
+        camera.setDisplayOrientation(getDegree());
         try {
             camera.setPreviewDisplay(surfaceHolder);
         } catch (IOException e) {
@@ -300,5 +311,26 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
     @Override
     public void onClick(MnfCargoListAdapter.ListViewHolder listViewHolder, View v, int pos) {
         Toast.makeText(this,list.get(pos).getDate(),Toast.LENGTH_SHORT).show();
+    }
+    public int getDegree(){
+        WindowManager windowManger=getWindowManager();
+        Display display= windowManger.getDefaultDisplay();
+        int rotation=display.getRotation();
+        int degree=0;
+        switch(rotation){
+            case Surface.ROTATION_0:
+                degree=90;
+                break;
+            case Surface.ROTATION_90:
+                degree=0;
+                break;
+            case Surface.ROTATION_180:
+                degree=270;
+                break;
+            case Surface.ROTATION_270:
+                degree=180;
+                break;
+        }
+        return degree;
     }
 }
