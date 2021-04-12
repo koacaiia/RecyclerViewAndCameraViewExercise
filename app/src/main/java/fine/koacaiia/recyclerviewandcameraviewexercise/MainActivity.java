@@ -1,18 +1,19 @@
 package fine.koacaiia.recyclerviewandcameraviewexercise;
 
-import androidx.annotation.NonNull;
-
-import androidx.appcompat.app.AppCompatActivity;
-import androidx.recyclerview.widget.LinearLayoutManager;
-import androidx.recyclerview.widget.RecyclerView;
-
 import android.Manifest;
-import android.app.DatePickerDialog;
+import android.app.AlertDialog;
+import android.content.ContentResolver;
+import android.content.ContentValues;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.pm.PackageManager;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.hardware.Camera;
+import android.net.Uri;
 import android.os.Bundle;
+import android.os.Environment;
+import android.provider.MediaStore;
 import android.util.Log;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
@@ -22,6 +23,11 @@ import android.widget.DatePicker;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import androidx.annotation.NonNull;
+import androidx.appcompat.app.AppCompatActivity;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
+
 import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
@@ -29,13 +35,12 @@ import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.database.Query;
 import com.google.firebase.database.ValueEventListener;
 
+import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.io.OutputStream;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
-import android.app.AlertDialog;
-
-import fine.koacaiia.recyclerviewandcameraviewexercise.R;
 
 public class MainActivity extends AppCompatActivity implements SurfaceHolder.Callback,MnfCargoListAdapter.AdapterOnClick {
     RecyclerView recyclerview;
@@ -123,7 +128,43 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
                 return true;
             }
         });
+        surfaceView.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                takePictures();
+            }
+        });
 
+    }
+
+    private void takePictures() {
+        Camera.PictureCallback callback= new Camera.PictureCallback() {
+            @Override
+            public void onPictureTaken(byte[] data, Camera camera) {
+                OutputStream fos=null;
+                Bitmap bitmap= BitmapFactory.decodeByteArray(data,0,data.length);
+                ContentValues contentValues=new ContentValues();
+                ContentResolver contentResolver=getContentResolver();
+                contentValues.put(MediaStore.Images.Media.DISPLAY_NAME,System.currentTimeMillis()+".jpg");
+                contentValues.put(MediaStore.Images.Media.MIME_TYPE,"images/*");
+                contentValues.put(MediaStore.Images.Media.RELATIVE_PATH, Environment.DIRECTORY_PICTURES+"/Fines");
+                Uri imageUri=contentResolver.insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI,contentValues);
+
+                try {
+                    fos=contentResolver.openOutputStream(imageUri);
+                } catch (FileNotFoundException e) {
+                    e.printStackTrace();
+                }
+                bitmap.compress(Bitmap.CompressFormat.JPEG,100,fos);
+                try {
+                    fos.close();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+                camera.startPreview();
+            }
+        };
+        camera.takePicture(null,null,callback);
     }
 
     private void putData() {
@@ -177,7 +218,7 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
     }
 
     private void getData() {
-        DatabaseReference databaseReference=database.getReference("MnF");
+        DatabaseReference databaseReference=database.getReference();
         ValueEventListener listener= new ValueEventListener() {
             @Override
             public void onDataChange(@NonNull DataSnapshot snapshot) {
